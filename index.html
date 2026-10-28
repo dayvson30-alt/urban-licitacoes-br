@@ -88,7 +88,7 @@ fetch("data/editais.json",{cache:"no-cache"}).then(r=>r.json()).then(j=>{
 $("mais").onclick=()=>{mostrar+=PAG;render()};
 
 function filtrados(t){
-  const q=sem($("q").value).split(/\s+/).filter(Boolean).map(w=>new RegExp("(^|[^a-z0-9])"+w.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"))), mun=sem($("mun").value), mod=$("mod").value,
+  const q=sem($("q").value).split(/\s+/).filter(Boolean).map(w=>new RegExp("(^|[^a-z0-9])"+w.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+(w.length<5?"(?![a-z0-9])":""))), mun=sem($("mun").value), mod=$("mod").value,
         vmin=+$("vmin").value||0, prio=$("prio").checked, srp=$("srp").checked;
   return D.editais.filter(e=>(!t||e.trilha===t)&&q.every(w=>w.test(e._b))&&(!mun||sem(e.municipio).includes(mun))
     &&(!mod||e.modalidade===mod)&&(e.valor||0)>=vmin&&(!prio||e.prioritaria)&&(!srp||e.srp)&&(dias(e.encerramento)??1)>=0);
