@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Licitações SP — Urban</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1b1f24;--mut:#5f6b7a;--ln:#e3e7ec;--ac:#0b6e4f;--ac2:#e8f4ef;--warn:#b42318;--warnbg:#fdecea;--gold:#9a6700;--goldbg:#fff4d6}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1216;--card:#171b21;--tx:#e6e9ee;--mut:#98a2b3;--ln:#2a3038;--ac:#3ecf8e;--ac2:#13281f;--warn:#ff8a80;--warnbg:#3a1714;--gold:#f5c451;--goldbg:#33290f}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{padding:20px 16px 8px;max-width:1100px;margin:auto}
+h1{margin:0;font-size:22px}
+.sub{color:var(--mut);font-size:13px;margin-top:4px}
+main{max-width:1100px;margin:auto;padding:0 16px 40px}
+.tabs{display:flex;gap:6px;margin:14px 0 10px;flex-wrap:wrap}
+.tab{border:1px solid var(--ln);background:var(--card);color:var(--tx);padding:8px 14px;border-radius:999px;cursor:pointer;font-weight:600}
+.tab[aria-selected=true]{background:var(--ac);border-color:var(--ac);color:#fff}
+.tab small{font-weight:400;opacity:.8;margin-left:4px}
+.hint{color:var(--mut);font-size:13px;margin:0 0 10px}
+.filtros{display:grid;grid-template-columns:2fr 1.3fr 1fr 1fr 1fr;gap:8px;margin-bottom:8px}
+.filtros input,.filtros select{width:100%;padding:8px 10px;border:1px solid var(--ln);border-radius:8px;background:var(--card);color:var(--tx);font:inherit}
+.linha2{display:flex;gap:16px;align-items:center;flex-wrap:wrap;color:var(--mut);font-size:14px;margin-bottom:12px}
+.linha2 label{display:flex;gap:6px;align-items:center;cursor:pointer}
+.card{background:var(--card);border:1px solid var(--ln);border-radius:12px;padding:14px;margin-bottom:10px}
+.card.prio{border-left:4px solid var(--gold)}
+.top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.obj{font-weight:600;margin:0 0 6px;overflow-wrap:anywhere}
+.val{font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
+.meta{color:var(--mut);font-size:13px;display:flex;gap:6px 14px;flex-wrap:wrap}
+.badge{display:inline-block;font-size:12px;padding:1px 8px;border-radius:999px;background:var(--ac2);color:var(--ac);font-weight:600}
+.badge.gold{background:var(--goldbg);color:var(--gold)}
+.badge.urg{background:var(--warnbg);color:var(--warn)}
+.acoes{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.acoes a{font-size:13px;text-decoration:none;padding:6px 10px;border-radius:8px;border:1px solid var(--ln);color:var(--tx)}
+.acoes a.wa{background:#25d366;border-color:#25d366;color:#08331a;font-weight:600}
+#mais{display:block;margin:16px auto;padding:10px 18px;border-radius:8px;border:1px solid var(--ln);background:var(--card);color:var(--tx);cursor:pointer}
+.vazio{color:var(--mut);text-align:center;padding:30px}
+@media (max-width:760px){.filtros{grid-template-columns:1fr 1fr}.filtros .busca{grid-column:1/-1}.top{flex-direction:column;gap:2px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Licitações SP</h1>
+  <div class="sub" id="sub">Carregando…</div>
+</header>
+<main>
+  <div class="tabs" role="tablist" id="tabs"></div>
+  <p class="hint" id="hint"></p>
+  <div class="filtros">
+    <input class="busca" id="q" type="search" placeholder="Buscar no objeto ou órgão (ex.: EVA, uniforme, pavimentação)">
+    <input id="mun" list="muns" placeholder="Município">
+    <datalist id="muns"></datalist>
+    <select id="mod"><option value="">Toda modalidade</option></select>
+    <input id="vmin" type="number" min="0" step="1000" placeholder="Valor mín. R$">
+    <select id="ord"><option value="prazo">Encerra primeiro</option><option value="valor">Maior valor</option><option value="novo">Mais recente</option></select>
+  </div>
+  <div class="linha2">
+    <label><input type="checkbox" id="prio"> Só cidades prioritárias</label>
+    <label><input type="checkbox" id="srp"> Só registro de preços</label>
+    <span id="cont"></span>
+  </div>
+  <div id="lista"></div>
+  <button id="mais" hidden>Mostrar mais</button>
+</main>
+<script>
+const TRILHAS={PRODUTOS:{nome:"Produtos",hint:"Fornecimento de material — onde a nossa empresa vende."},
+  OBRAS:{nome:"Obras",hint:"Obras e engenharia — repassar para as construtoras parceiras da Liz."},
+  SERVICOS:{nome:"Serviços",hint:"Prestação de serviço — fora do foco, só para consulta."}};
+const PAG=60, $=id=>document.getElementById(id);
+let D=null, trilha="PRODUTOS", mostrar=PAG;
+const brl=v=>v==null?"—":v.toLocaleString("pt-BR",{style:"currency",currency:"BRL",maximumFractionDigits:0});
+const sem=s=>(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
+const dias=d=>d?Math.ceil((new Date(d)-Date.now())/864e5):null;
+const dataBR=d=>d?new Date(d).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"—";
+const esc=s=>(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+try{const p=new URLSearchParams(location.hash.slice(1));if(TRILHAS[p.get("t")])trilha=p.get("t")}catch(e){}
+
+fetch("data/editais.json",{cache:"no-cache"}).then(r=>r.json()).then(j=>{
+  D=j; D.editais.forEach(e=>e._b=sem(e.objeto+" "+e.orgao+" "+e.municipio));
+  $("sub").textContent=`${D.editais.length.toLocaleString("pt-BR")} editais com proposta aberta no estado de SP · fonte PNCP · atualizado ${new Date(D.atualizado).toLocaleString("pt-BR")} · prioritárias: ${D.prioritarias.join(", ")}`;
+  $("muns").innerHTML=[...new Set(D.editais.map(e=>e.municipio))].sort().map(m=>`<option value="${esc(m)}">`).join("");
+  $("mod").innerHTML+= [...new Set(D.editais.map(e=>e.modalidade))].sort().map(m=>`<option>${esc(m)}</option>`).join("");
+  render();
+}).catch(()=>{$("sub").textContent="Erro ao carregar data/editais.json"});
+
+["q","mun","mod","vmin","ord","prio","srp"].forEach(id=>$(id).addEventListener("input",()=>{mostrar=PAG;render()}));
+$("mais").onclick=()=>{mostrar+=PAG;render()};
+
+function filtrados(t){
+  const q=sem($("q").value).split(/\s+/).filter(Boolean), mun=sem($("mun").value), mod=$("mod").value,
+        vmin=+$("vmin").value||0, prio=$("prio").checked, srp=$("srp").checked;
+  return D.editais.filter(e=>(!t||e.trilha===t)&&q.every(w=>e._b.includes(w))&&(!mun||sem(e.municipio).includes(mun))
+    &&(!mod||e.modalidade===mod)&&(e.valor||0)>=vmin&&(!prio||e.prioritaria)&&(!srp||e.srp)&&(dias(e.encerramento)??1)>=0);
+}
+function render(){
+  $("tabs").innerHTML=Object.entries(TRILHAS).map(([k,v])=>`<button class="tab" role="tab" aria-selected="${k===trilha}" data-t="${k}">${v.nome}<small>${filtrados(k).length}</small></button>`).join("");
+  $("tabs").querySelectorAll(".tab").forEach(b=>b.onclick=()=>{trilha=b.dataset.t;mostrar=PAG;try{location.hash="t="+trilha}catch(e){}render()});
+  $("hint").textContent=TRILHAS[trilha].hint;
+  const ord=$("ord").value, L=filtrados(trilha).sort((a,b)=>
+    ord==="valor"?(b.valor||0)-(a.valor||0):ord==="novo"?(b.publicacao||"").localeCompare(a.publicacao||""):(a.encerramento||"9").localeCompare(b.encerramento||"9"));
+  const soma=L.reduce((s,e)=>s+(e.valor||0),0);
+  $("cont").textContent=`${L.length.toLocaleString("pt-BR")} editais · ${brl(soma)} estimados`;
+  $("lista").innerHTML=L.length?L.slice(0,mostrar).map(card).join(""):`<div class="vazio">Nenhum edital com esses filtros.</div>`;
+  $("mais").hidden=L.length<=mostrar;
+}
+function card(e){
+  const d=dias(e.encerramento), urg=d!=null&&d<=3;
+  const wa=e.trilha==="OBRAS"?`<a class="wa" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(
+    `Oportunidade de obra — ${e.municipio}/SP\n${e.objeto.slice(0,300)}\nÓrgão: ${e.orgao}\nValor estimado: ${brl(e.valor)}\nModalidade: ${e.modalidade}\nPropostas até: ${dataBR(e.encerramento)}\nEdital: ${e.link_pncp}`)}">Enviar p/ parceiro</a>`:"";
+  return `<div class="card${e.prioritaria?" prio":""}">
+  <div class="top"><p class="obj">${esc(e.objeto.slice(0,320))}${e.objeto.length>320?"…":""}</p><span class="val">${brl(e.valor)}</span></div>
+  <div class="meta">
+    <span>${e.prioritaria?`<span class="badge gold">★ ${esc(e.municipio)}</span>`:esc(e.municipio)}</span>
+    <span>${esc(e.orgao)}</span><span>${esc(e.modalidade)}${e.srp?" · SRP":""}</span>
+    <span class="badge${urg?" urg":""}">encerra ${dataBR(e.encerramento)}${d!=null?` · ${d<=0?"hoje":d+"d"}`:""}</span>
+  </div>
+  <div class="acoes"><a target="_blank" rel="noopener" href="${esc(e.link_pncp)}">Edital no PNCP</a>${e.link_origem?`<a target="_blank" rel="noopener" href="${esc(e.link_origem)}">Portal de disputa</a>`:""}${wa}</div>
+</div>`;
+}
+</script>
+</body>
+</html>

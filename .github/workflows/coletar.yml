@@ -1,0 +1,23 @@
+name: Coletar editais PNCP
+on:
+  schedule:
+    - cron: "0 10 * * *"   # 7h de Brasília
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  coletar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python coletor.py
+      - run: |
+          git config user.name "coletor-pncp"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/editais.json
+          git diff --cached --quiet || git commit -m "editais $(date -u +%F)"
+          git push
