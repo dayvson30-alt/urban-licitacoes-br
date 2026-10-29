@@ -38,7 +38,7 @@ RE_SERVICO = re.compile(r"servic|assessoria|consultoria|exame|transporte|vigilan
 # Ramos que a L R SOLUCOES LTDA (CNPJ 24.615.728/0001-96) pode disputar, agrupando seus CNAEs.
 # Edital que casa com algum ramo recebe a marca "L R pode disputar" no painel.
 RAMOS_LR = {
-    "Esporte e lazer": r"tatame|\beva\b|esportiv|colchonete|\bbolas?\b|brinquedo|playground|recreativ|medalha|trofeu|camping",
+    "Esporte e lazer": r"tatame|\beva\b|e\.v\.a|placas? de eva|emborrachad|esportiv|colchonete|\bbolas?\b|brinquedo|playground|recreativ|medalha|trofeu|camping",
     "Papelaria e escolar": r"papelaria|material (de )?escritorio|material escolar|kits? escolar|caderno|\blivros?\b|sulfite|expediente|^\W*papel\W*$|papel a4|resma",
     "Informática e eletrônicos": r"informatica|computador|notebook|impressora|toner|cartucho|monitor|tablet|eletronic|telefon|projetor|\bcamera|nobreak|scanner|lousa digital",
     "Eletrodomésticos e móveis": r"eletrodomestic|refrigerador|geladeira|freezer|fogao|ar[- ]condicionado|ventilador|bebedouro|micro-?ondas|mobiliari|\bmoveis\b|cadeiras?\b|armario|colch(ao|oes)",
